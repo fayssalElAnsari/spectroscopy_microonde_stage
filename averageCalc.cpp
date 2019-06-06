@@ -12,8 +12,14 @@ bugs:
 we need to calculate the firstAveragePoint of the two directions,
 then seperate into two groups and not just seperate to two groups with the average of one direction
 
-2.
+2. fixed
 the firstAveragePoint2 is wrong
+
+3. fixed
+the average doens't work for direction 2 because ???the .tdf filter is recursive we want a none recursive filter
+
+todo:
+. shift the average and export info in the standard two direction layout
 */
 
 #include <string>
@@ -21,91 +27,103 @@ the firstAveragePoint2 is wrong
 #include <fstream>
 #include <dirent.h>
 
+
 using namespace std;
 
 const int SIZE = 4096;
 double averageFirstPoint1, averageFirstPoint2;
 
-
 int numTdfFiles;
 int* groupeSize = new int[4];
 
 string* courbesFiles;
-string* courbesFiles1, courbesFiles2;
 
 string* files = new string[100];
 
 double* courbe1 = new double[SIZE];
 double* courbe2 = new double[SIZE];
 
-double returnFirstPoint(string inFileName){
-//    string str;
-//    string strNum;
-//    double y;
-//    ifstream inFile;
-//    inFile.open(inFileName);
-////    cout<<"this is the inFileName: "<<inFileName<<endl;
-//    if (inFile.is_open()){
-//        inFile>>str;
-//        inFile>>strNum;
-//    }
-//    y = stod(strNum);
-//    return y;
+void createFolders (){
+    int check;
+    string* names = new string[7];
+    names[0]=".\\shots\\averages";
+    names[1]=".\\shots\\groupe1";
+    names[2]=".\\shots\\groupe1\\direction1";
+    names[3]=".\\shots\\groupe1\\direction2";
+    names[4]=".\\shots\\groupe2";
+    names[5]=".\\shots\\groupe2\\direction1";
+    names[6]=".\\shots\\groupe2\\direction2";
+    for( int i = 0; i< 7; i++){
+        string dirname = names[i];
+//        clrscr();
+
+        check = mkdir(dirname.c_str());
+
+        // check if directory is created or not
+        if (!check)
+            printf("Directory created\n \n");
+        else {
+            printf("Unable to create directory \n");
+        }
+
+    }
+//    system("dir/p");
 }
 
+//void createFoldersList (){
+//    string names = new string[7];
+//    names[0]=".\\shots\\averages";
+//    names[1]=".\\shots\\groupe1";
+//    names[2]=".\\shots\\groupe1\\direction1";
+//    names[3]=".\\shots\\groupe1\\direction2";
+//    names[4]=".\\shots\\groupe2";
+//    names[5]=".\\shots\\groupe2\\direction1";
+//    names[6]=".\\shots\\groupe2\\direction2";
+//    // Creating a directory
+//    if (mkdir("geeksforgeeks", 0777) == -1)
+//        cerr << "Error :  " << strerror(errno) << endl;
+//
+//    else
+//        cout << "Directory created";
+//}
+
 void populateCourbesFiles(char* thePath) {
-    ///scan directory for files
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir (thePath)) != NULL) {
       /* print all the files and directories within directory */
       int i = 0;
-//      cout<<"directory content: "<<endl;
       while ((ent = readdir (dir)) != NULL) {
         //printf ("%s\n", ent->d_name);
         files[i] = ent -> d_name;
-//        cout<<files[i]<<endl;
         i++;
       }
       closedir (dir);
     } else {
-      /* could not open directory */
       perror ("");
     }
 
-    ///filter out only the files with extension ".tdf"
-    ///calculate number of tdf files
     numTdfFiles = 0;
     for(int i = 0; i < 100; i++){
         std::string fn = files[i];
       if(fn.substr(fn.find_last_of(".") + 1) == "tdf") {
-//        std::cout << "Yes..." << std::endl;
-//        cout<<"files["<<i<<"] "<<files[i]<<endl;
-//        cout<<courbesFiles[j]<<endl;
         numTdfFiles++;
       } else {
-        //std::cout << "No..." << std::endl;
+
       }
     }
 
-    ///get names of tdf files
     int j = 0;
     courbesFiles = new string[numTdfFiles];
     for(int i = 0; i < 100; i ++){
         std::string fn = files[i];
       if(fn.substr(fn.find_last_of(".") + 1) == "tdf") {
-//        std::cout << "Yes..." << std::endl;
         courbesFiles[j] = files[i];
-//        cout<<courbesFiles[j]<<" in "<<thePath<<endl;
-//        cout<<"files["<<i<<"] "<<files[i]<<endl;
-//        cout<<courbesFiles[j]<<endl;
         j++;
       } else {
-        //std::cout << "No..." << std::endl;
+
       }
     }
-//    cout<<"found "<<numTdfFiles<<" .tdf files in "<<thePath<<endl;
-//    cout<<"****** ******"<<endl;
 }
 
 void readData(string inFileName) {
@@ -119,11 +137,27 @@ void readData(string inFileName) {
         {
             inFile >> courbe1[i]>>courbe2[i];
         }
+    } else {
+        cout<<"can't read "<<inFileName<<endl;
     }
 }
 
+void readData2(string inFileName) {
+    ifstream inFile;
+    inFile.open(inFileName);
+    if (inFile.is_open())
+    {
+        for (int i = 0; i < SIZE; i++)
+        {
+            inFile >> courbe1[i];
+        }
+    } else {
+        cout<<"ERROR "<<inFileName<<" is not Open"<<endl;
+    }
+    inFile.close();
+}
+
 void calculateAverage(string* courbesFiles) {
-//    cout<<"start of calculate average"<<endl;
     populateCourbesFiles(".\\shots");
 
     double* averageA = new double[SIZE];
@@ -132,7 +166,6 @@ void calculateAverage(string* courbesFiles) {
     ofstream outFile;
     outFile.open(".\\shots\\averages\\averageWithoutSeperation.tdf");
 
-    //accumulate
     for(int i =0; i < numTdfFiles; i++){
         readData(".\\shots\\"+courbesFiles[i]);
         for(int j = 0; j < SIZE; j++){
@@ -140,7 +173,7 @@ void calculateAverage(string* courbesFiles) {
             averageB[j] += courbe2[j];
         }
     }
-    //average
+
     for(int i=0; i < SIZE;i++){
         averageA[i] = averageA[i]/numTdfFiles;
         averageB[i] = averageB[i]/numTdfFiles;
@@ -148,152 +181,10 @@ void calculateAverage(string* courbesFiles) {
     }
     averageFirstPoint1 = averageA[0];
     averageFirstPoint2 = averageB[0];
-    cout<<"the number of tdfFiles: "<<numTdfFiles<<"; averagePoint1: "<<averageA[0]<<"; averagePoint2: "<<averageB[0]<<endl;
+    cout<<"the number of .tdf iles in \".\shots\" is: "<<numTdfFiles<<endl;
+    cout<<"averagePoint1: "<<averageA[0]<<"; averagePoint2: "<<averageB[0]<<endl;
     outFile.close();
-//    cout<<"file : "<<"averageWithoutSeperation.tdf created"<<endl;
 }
-
-void calculateAverage2(char* shotsPathName, int* groupSize) {
-    ofstream outFile;
-    int fullSize = groupSize[0] + groupSize[1];
-
-    ///calculate average for groupe one direction 1
-    populateCourbesFiles(".\\shots\\groupe1\\direction1");
-    outFile.open(".\\shots\\averages\\average1_1.tdf");
-    double* average = new double[SIZE];
-
-    //accumulate
-    for(int i =0; i < groupSize[0]; i++){
-        readData(courbesFiles[i]);
-        for(int j = 0; j < SIZE; j++){
-            average[j] += courbe1[j];
-        }
-    }
-
-//    cout<<"the numtdffiles is: "<<numTdfFiles<<endl;
-    //average
-    for(int i=0; i < SIZE;i++){
-        average[i] = average[i]/groupSize[0];
-//        cout<<average[i]<<endl;
-        outFile<<average[i]<<"  "<<endl;
-    }
-    outFile.close();
-
-
-    ///calculate average for groupe one direction 2
-    populateCourbesFiles(".\\shots\\groupe1\\direction2");
-    outFile.open(".\\shots\\averages\\average1_2.tdf");
-
-    //accumulate
-    for(int i =0; i < groupSize[1]; i++){
-        readData(courbesFiles[i]);
-        for(int j = 0; j < SIZE; j++){
-            average[j] += courbe1[j];
-        }
-    }
-
-//    cout<<"the numtdffiles is: "<<numTdfFiles<<endl;
-    //average
-    for(int i=0; i < SIZE;i++){
-        average[i] = average[i]/groupSize[1];
-//        cout<<average[i]<<endl;
-        outFile<<average[i]<<"  "<<endl;
-    }
-    outFile.close();
-
-    ///calculate average for groupe two direction 1
-    populateCourbesFiles(".\\shots\\groupe2\\direction1");
-    outFile.open(".\\shots\\averages\\average2_1.tdf");
-
-    //accumulate
-    for(int i =0; i < groupSize[2]; i++){
-        readData(courbesFiles[i]);
-        for(int j = 0; j < SIZE; j++){
-            average[j] += courbe1[j];
-        }
-    }
-
-//    cout<<"the numtdffiles is: "<<numTdfFiles<<endl;
-    //average
-    for(int i=0; i < SIZE;i++){
-        average[i] = average[i]/groupSize[2];
-//        cout<<average[i]<<endl;
-        outFile<<average[i]<<"  "<<endl;
-    }
-    outFile.close();
-
-    ///calculate average for groupe two direction 2
-    populateCourbesFiles(".\\shots\\groupe2\\direction2");
-    outFile.open(".\\shots\\averages\\average2_2.tdf");
-
-    //accumulate
-    for(int i =0; i < groupSize[3]; i++){
-        readData(courbesFiles[i]);
-        for(int j = 0; j < SIZE; j++){
-            average[j] += courbe1[j];
-        }
-    }
-
-//    cout<<"the numtdffiles is: "<<numTdfFiles<<endl;
-    //average
-    for(int i=0; i < SIZE;i++){
-        average[i] = average[i]/groupSize[3];
-//        cout<<average[i]<<endl;
-        outFile<<average[i]<<"  "<<endl;
-    }
-    outFile.close();
-
-
-//    ///groupe 2
-//    populateCourbesFiles(".\\shots\\groupe2");
-//    outFile2.open(".\\shots\\averages\\average2.tdf");
-//    double* average2A = new double[SIZE];
-//    double* average2B = new double[SIZE];
-//
-//    //accumulate
-//    for(int i =0; i < groupe2Size; i++){
-//        readData(courbesFiles[i]);
-//        for(int j = 0; j < SIZE; j++){
-//            average2A[j] += courbe1[j];
-//            average2B[j] += courbe2[j];
-//
-//        }
-//    }
-//    //average
-//    for(int i=0; i < SIZE;i++){
-//        average2A[i] = average2A[i]/groupe2Size;
-//        average2A[i] = average2B[i]/groupe2Size;
-//
-////        cout<<average[i]<<endl;
-//        outFile2<<average2A[i]<<"   "<<average2B[i]<<endl;
-//    }
-//    outFile2.close();
-}
-
-void loadFiles() {
-//    int currentPath;
-//    //get current path
-//    int bytes = GetModuleFileName(NULL, pBuf, len);
-//    if(bytes == 0)
-//        currentPath = '/';
-//    else
-//        currentPath = bytes;
-//
-//    DIR *dir;
-//    struct dirent *ent;
-//    if ((dir = opendir ("\\")) != NULL) {
-//      /* print all the files and directories within directory */
-//      while ((ent = readdir (dir)) != NULL) {
-//        printf ("%s\n", ent->d_name);
-//    }
-//      closedir (dir);
-//    } else {
-//      /* could not open directory */
-//      perror ("");
-////      return EXIT_FAILURE;
-//    }
-}
-
 
 void splitToTwo(string* courbesFiles, double averagePoint){
     int* inGroupe = new int[4];
@@ -312,14 +203,6 @@ void splitToTwo(string* courbesFiles, double averagePoint){
                 outfile<<courbe1[j]<<endl;
             }
 
-
-            ///copy files from shots to shots\\groupe1 directly
-////          cout<<"courbe1[0]: "<<courbe1[0]<<"; averagePoint: "<<averagePoint<<endl;
-//            std::ifstream  src(".\\shots\\"+courbesFiles[i], std::ios::binary);
-//            std::ofstream  dst(".\\shots\\groupe1\\"+courbesFiles[i],   std::ios::binary);
-////            cout<<courbesFiles[i]<<" is in groupe : 1"<<endl;
-//
-//            dst << src.rdbuf();
             inGroupe[0] = inGroupe[0]+1;
             outfile.close();
         } else {
@@ -329,13 +212,7 @@ void splitToTwo(string* courbesFiles, double averagePoint){
                 outfile<<courbe1[j]<<endl;
             }
 
-//            ///copy files from shots to shots\\groupe2
-//            std::ifstream  src(".\\shots\\"+courbesFiles[i], std::ios::binary);
-//            std::ofstream  dst(".\\shots\\groupe2\\"+courbesFiles[i],   std::ios::binary);
-////            cout<<courbesFiles[i]<<" is in groupe : 2"<<endl;
-//
-//            dst << src.rdbuf();
-            inGroupe[1] = inGroupe[1]+1;
+            inGroupe[2] = inGroupe[2]+1;
             outfile.close();
         }
 
@@ -346,7 +223,7 @@ void splitToTwo(string* courbesFiles, double averagePoint){
                 outfile<<courbe2[j]<<endl;
             }
 
-            inGroupe[2] = inGroupe[2]+1;
+            inGroupe[1] = inGroupe[1]+1;
             outfile.close();
         } else {
             ///using outfile
@@ -368,47 +245,185 @@ void splitToTwo(string* courbesFiles, double averagePoint){
     for(int i = 0; i<4; i++) {
         groupeSize[i] = inGroupe[i];
     }
+}
 
+void nullify(double* &average){
+        for(int i =0; i < SIZE; i++) {
+            average[i] = 0;
+        }
+    }
 
-    //split files in groupe1 and in group2 according to the direction
+void calculateAverage2(char* shotsPathName, int* groupSize) {
+    double* average = new double[SIZE];
+    nullify(average);
+    ofstream outFile;
+
+    populateCourbesFiles(".\\shots\\groupe1\\direction1");
+    outFile.open(".\\shots\\averages\\average1_1.tdf");
+    for(int i =0; i < groupSize[0]; i++){
+        cout<<"1_1: "<<courbesFiles[i]<<endl;
+        readData2(".\\shots\\groupe1\\direction1\\"+courbesFiles[i]);
+        for(int j = 0; j < SIZE; j++){
+            average[j] += courbe1[j];
+        }
+    }
+
+    for(int i=0; i < SIZE;i++){
+        average[i] = average[i]/groupSize[0];
+        outFile<<average[i]<<"  "<<endl;
+    }
+    outFile.close();
+    nullify(average);
+
+    populateCourbesFiles(".\\shots\\groupe1\\direction2");
+    outFile.open(".\\shots\\averages\\average1_2.tdf");
+
+    for(int i =0; i < groupSize[1]; i++){
+        cout<<"1_2: "<<courbesFiles[i]<<endl;
+        readData2(".\\shots\\groupe1\\direction2\\"+courbesFiles[i]);
+        for(int j = 0; j < SIZE; j++){
+            average[j] += courbe1[j];
+        }
+    }
+
+    for(int i=0; i < SIZE;i++){
+        average[i] = average[i]/groupSize[1];
+        outFile<<average[i]<<"  "<<endl;
+    }
+    outFile.close();
+    nullify(average);
+
+    populateCourbesFiles(".\\shots\\groupe2\\direction1");
+    outFile.open(".\\shots\\averages\\average2_1.tdf");
+
+    for(int i =0; i < groupSize[2]; i++){
+        cout<<"2_1: "<<courbesFiles[i]<<endl;
+        readData2(".\\shots\\groupe2\\direction1\\"+courbesFiles[i]);
+        for(int j = 0; j < SIZE; j++){
+            average[j] += courbe1[j];
+        }
+    }
+
+    for(int i=0; i < SIZE;i++){
+        average[i] = average[i]/groupSize[2];
+        outFile<<average[i]<<"  "<<endl;
+    }
+    outFile.close();
+    nullify(average);
+
+    populateCourbesFiles(".\\shots\\groupe2\\direction2");
+    outFile.open(".\\shots\\averages\\average2_2.tdf");
+
+    for(int i =0; i < groupSize[3]; i++){
+        cout<<"2_2: "<<courbesFiles[i]<<endl;
+        readData2(".\\shots\\groupe2\\direction2\\"+courbesFiles[i]);
+        for(int j = 0; j < SIZE; j++){
+            average[j] += courbe1[j];
+        }
+    }
+
+    for(int i=0; i < SIZE;i++){
+        average[i] = average[i]/groupSize[3];
+        outFile<<average[i]<<"  "<<endl;
+    }
+    outFile.close();
+    nullify(average);
+}
+
+void calculateAverage3(char* shotsPathName) {
+    populateCourbesFiles(shotsPathName);
 
 }
 
-void printArray(double table[]){
-    cout<<"called"<<endl;
+void combineSingleResults(){
+    char* pathName;
+    pathName = ".\\shots\\averages";
+    populateCourbesFiles(pathName);
+    ofstream outFile;
+    for(int i = 0; i < numTdfFiles; i++){
+            readData(pathName+courbesFiles[i]);
+//            outFile.open(pathName+"\\average1.tdf");
+    }
+
+    outFile.close();
 }
 
+///fourier functions
+//void four1(double* data, unsigned long nn)
+//{
+//    unsigned long n, mmax, m, j, istep, i;
+//    double wtemp, wr, wpr, wpi, wi, theta;
+//    double tempr, tempi;
+//
+//    // reverse-binary reindexing
+//    n = nn<<1;
+//    j=1;
+//    for (i=1; i<n; i+=2) {
+//        if (j>i) {
+//            swap(data[j-1], data[i-1]);
+//            swap(data[j], data[i]);
+//        }
+//        m = nn;
+//        while (m>=2 && j>m) {
+//            j -= m;
+//            m >>= 1;
+//        }
+//        j += m;
+//    };
+//
+//    // here begins the Danielson-Lanczos section
+//    mmax=2;
+//    while (n>mmax) {
+//        istep = mmax<<1;
+//        theta = -(2*M_PI/mmax);
+//        wtemp = sin(0.5*theta);
+//        wpr = -2.0*wtemp*wtemp;
+//        wpi = sin(theta);
+//        wr = 1.0;
+//        wi = 0.0;
+//        for (m=1; m < mmax; m += 2) {
+//            for (i=m; i <= n; i += istep) {
+//                j=i+mmax;
+//                tempr = wr*data[j-1] - wi*data[j];
+//                tempi = wr * data[j] + wi*data[j-1];
+//
+//                data[j-1] = data[i-1] - tempr;
+//                data[j] = data[i] - tempi;
+//                data[i-1] += tempr;
+//                data[i] += tempi;
+//            }
+//            wtemp=wr;
+//            wr += wr*wpr - wi*wpi;
+//            wi += wi*wpr + wtemp*wpi;
+//        }
+//        mmax=istep;
+//    }
+//}
+//
+//
 void FFT(double* courbe) {
+    populateCourbesFiles(".\\shots\\averages\\");
+    ofstream outFile;
+    for(int i = 0; i < numTdfFiles; i++){
+            readData(courbesFiles[i]);
+            outFile.open(".\\shots\\averages\\"+courbesFiles[i]);
+    }
+//    four1(courbe1, numTdfFiles);
 
 }
 
 int main()
 {
-    char* pathNameShots = ".\\shots";
-    populateCourbesFiles(pathNameShots);
-
     averageFirstPoint1 = 0;
-    cout<<"number of tdffiles is: "<<numTdfFiles<<endl;
+    averageFirstPoint2 = 0;
+    char* pathNameShots = ".\\shots";
 
-    ///calculating the average first point
-//    for(int i=0; i < numTdfFiles; i++) {
-//        str_i = std::to_string(i+1);
-//        filename = "shot_"+str_i+".tdf";
-//        filename = ".\\shots\\"+filename;
-////       cout<<"this is the filename in main: "<<filename<<endl;
-//        readData(filename);
-//        firstPoint[i] = returnFirstPoint(filename);
-////        cout<<i+1<<":"<<firstPoint[i]<<endl;
-//    }
-//
-//    for(int i=0; i < numTdfFiles; i++) {
-//        averagePoint += firstPoint[i];
-////        cout<<"the average is now: "<<averagePoint<<";the first point is now: "<<firstPoint[i]<<endl;
-//    }
-//    averagePoint = averagePoint/numTdfFiles;
+    createFolders();
+
+    populateCourbesFiles(pathNameShots);
     calculateAverage(courbesFiles);
     splitToTwo(courbesFiles, averageFirstPoint1);
     calculateAverage2(".\shots", groupeSize);
-    loadFiles();
+
     return 0;
 }
