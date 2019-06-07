@@ -7,19 +7,21 @@ this file is supposed to be smaller and faster by using variables only and writi
 #include <iostream>
 #include <fstream>
 #include <dirent.h>
-#include <complex>
-#include <valarray>
 #include <string>
+
+using namespace std;
 
 const int size = 32;
 const int numDeGroupes = 2;
 const int numDeDirections = 2;
+const int numDacquisitions = 4096;
 
 string* shotsFiles;
 int numTdfFiles;
+double firstAveragePoint1;
+double firstAveragePoint2;
 
-
-double*** a;
+double**** a;
 
 ///build the folders boilerplate
 void createFolders (){
@@ -45,7 +47,7 @@ void setShotsFiles (){
     //get the whole list of files in .\\shots
     char* thePath = ".\\shots";
     DIR *dir;
-    double* files = new double[1000];//overflow?
+    string* files = new string[1000];//overflow?
     struct dirent *ent;
     if ((dir = opendir (thePath)) != NULL) {
       int i = 0;
@@ -61,10 +63,12 @@ void setShotsFiles (){
     //get the number of tdf files in .\\shots
     numTdfFiles = 0;
     for(int i = 0; i < 1000; i++){
-        if(fn.substr(files[i].find_last_of(".") + 1) == "tdf") {
+        string fn = files[i];
+        if(fn.substr(fn.find_last_of(".") + 1) == "tdf") {
         numTdfFiles++;
         }
     }
+    cout<<"numTdfFiles "<<numTdfFiles<<endl;
 
     //get the names of tdf files in .\\shots
     int j = 0;
@@ -79,28 +83,75 @@ void setShotsFiles (){
 }
 
 void createContainer() {
-    a = new double*[numTdfFiles];
-    for(int i = 0; i < numDeGroupes; i++){
-        a[i]* = new int[numDeGroupes];
-        for(int j=0; j < numDeDirections; j++){
-            a[i][j] = new int[numDeDirections];
-        }
+    a = new double***[numTdfFiles];
+    for(int i =0; i<numTdfFiles; i++){
+       a[i] = new double**[numDeGroupes];
+       for(int j =0; j<numDeGroupes; j++){
+           a[i][j] = new double*[numDeDirections];
+           for(int k = 0; k<numDeDirections;k++){
+              a[i][j][k] = new double[numDacquisitions];
+                for(int l = 0; l< numDacquisitions; l++){
+                    a[i][j][k][l] = 0;
+                }
+           }
+       }
     }
 }
 
 void setContainer() {
+    string str;
     ifstream inFile;
     for(int i =0; i < numTdfFiles; i++) {
-        inFile.open(".\\shots\\"+shotsFiles);
-
+        inFile.open((".\\shots\\"+shotsFiles[i]).c_str());
+        inFile>>str;
+        if(inFile.is_open()){
+            for(int i =0; i< numTdfFiles; i++){
+                for(int l = 0; l < numDacquisitions; l++) {
+                    inFile>> a[i][0][numDeDirections-2][l] >> a[i][0][numDeDirections-1][l];
+                }
+            }
+            inFile.close();
+        } else {
+            cout<<"file not open!!!"<<endl;
+        }
     }
+}
+
+void calculateAverage() {
+    cout<<": "<<a[0][0][0][0]<<"     "<<a[0][0][1][0]<<endl;
+    //accumulate
+    for(int i = 0; i < numTdfFiles; i++) {
+        for( int l =0; l<numDacquisitions; l++){
+            a[0][0][0][l] += a[i][0][0][l];
+            a[0][0][1][l] += a[i][0][1][l];
+        }
+    }
+
+    for( int l =0; l<numDacquisitions; l++){
+        cout<<l<<": "<<a[0][0][0][l]<<"     "<<a[0][0][1][l]<<endl;
+    }
+
+
+
+    //calculate the average
+    for(int i = 0; i < numTdfFiles; i++) {
+        for( int l =0; l<numDacquisitions; l++){
+            a[0][0][0][l] = a[0][0][0][l]/numTdfFiles;
+            a[0][0][1][l] = a[0][0][1][l]/numTdfFiles;
+        }
+    }
+
+    firstAveragePoint1 = a[0][0][0][0];
+    firstAveragePoint2 = a[0][0][1][0];
+    cout<<"1: "<<firstAveragePoint1<<"2: "<< firstAveragePoint2<<endl;
 }
 
 int main(){
     createFolders();
     setShotsFiles();
     createContainer();
-
+    setContainer();
+    calculateAverage();
     return 0;
 }
 
